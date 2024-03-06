@@ -29,11 +29,11 @@ def load_data():
 
 df = load_data()
 
-# Set the title 
+# Set the title
 st.title("Welcome to Spotify's predictive dashboard!")
 
 
-# load spotify image 
+# load spotify image
 image = Image.open('spotify.png')
 
 # display image
@@ -67,6 +67,12 @@ elif page == 'Analysis':
     # calculate the correlation matrix for the filtered DataFrame
     corr = filtered_df.corr()
 
+    #1st pairplot image path
+    pairplot_image_path = 'pairplot1.png'
+
+    # display the image
+    st.image(pairplot_image_path, caption='Pairplot 1')
+
     # create the heatmap
     fig = px.imshow(
         corr,
@@ -74,21 +80,22 @@ elif page == 'Analysis':
         labels=dict(x="Feature", y="Feature", color="Correlation"),
         x=corr.columns,
         y=corr.columns,
-        color_continuous_scale='Viridis', 
+        color_continuous_scale='Viridis',
     )
 
     fig.update_layout(
-        title_text='Heatmap of Feature Correlations', 
+        title_text='Heatmap of Feature Correlations',
         title_x=0  # title aligned to the left
     )
+
     # display
     st.plotly_chart(fig)
 
     # pairplot image path
     pairplot_image_path = 'pairplot.png'
 
-    # display the image 
-    st.image(pairplot_image_path, caption='Pairplot')
+    # display the image
+    st.image(pairplot_image_path, caption='Pairplot 2')
 
     # tabs for each visualization
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["Count of Each Key", "Average Streams by Key", "BPM Histogram", "Artist Chart", "Number of Artists Contributing to Each Song"])
@@ -105,7 +112,7 @@ elif page == 'Analysis':
             key_counts,
             x='key',
             y='count',
-            color='key', 
+            color='key',
             labels={'count': 'Count', 'key': 'Key'},
             title="Count of Each Key",
             hover_data={'count': True},
@@ -113,7 +120,7 @@ elif page == 'Analysis':
 
         # layout
         fig.update_layout(
-            showlegend=False,  
+            showlegend=False,
             coloraxis_colorbar=dict(title='Key'),
             plot_bgcolor='rgba(0,0,0,0)'
         )
@@ -132,7 +139,7 @@ elif page == 'Analysis':
             new_df,
             x='key',
             y='avg_streams',
-            color='key',  
+            color='key',
             labels={'avg_streams': 'Average Streams', 'key': 'Key'},
             title='Average Streams by Key',
             hover_data={'avg_streams': True, 'min_streams': False, 'max_streams': False},
@@ -158,7 +165,7 @@ elif page == 'Analysis':
         fig.update_layout(
             xaxis_title="BPM",
             yaxis_title="Count",
-            bargap=0.2,  
+            bargap=0.2,
         )
 
         # display
@@ -181,11 +188,11 @@ elif page == 'Analysis':
                     color='Frequency',
                     color_continuous_scale=px.colors.sequential.Viridis)
 
-        # display 
+        # display
         st.plotly_chart(fig)
         st.write("👨‍💻 Here we can see the most popular artists of 2023.")
     with tab5:
-
+        st.subheader('Number of Artists Contributing to Each Song')
         artist_count_distribution = df['artist_count'].value_counts().reset_index()
         artist_count_distribution.columns = ['Number of Artists', 'Number of Songs']
         artist_count_distribution = artist_count_distribution.sort_values('Number of Artists')
@@ -223,7 +230,7 @@ elif page == 'Predictions':
     importance = np.abs(coefficients)
 
     # plotting feature importance
-    fig_importance = px.bar(x=importance, y=feature_names, orientation='h', 
+    fig_importance = px.bar(x=importance, y=feature_names, orientation='h',
                             labels={'x': 'Absolute Coefficient Value', 'y': ''},
                             title='Feature Importance (Linear Regression)')
     st.plotly_chart(fig_importance)
