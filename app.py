@@ -98,7 +98,7 @@ elif page == 'Analysis':
     st.image(pairplot_image_path, caption='Pairplot 2')
 
     # tabs for each visualization
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Count of Each Key", "Average Streams by Key", "BPM Histogram", "Artist Chart", "Number of Artists Contributing to Each Song"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Count of Each Key", "Key Pie Chart", "Average Streams by Key", "BPM Histogram", "Artist Chart", "Number of Artists Contributing to Each Song"])
 
     with tab1:
         st.subheader("Count of Each Key")
@@ -117,7 +117,6 @@ elif page == 'Analysis':
             title="Count of Each Key",
             hover_data={'count': True},
         )
-
         # layout
         fig.update_layout(
             showlegend=False,
@@ -131,6 +130,24 @@ elif page == 'Analysis':
         st.write("👨‍💻 Here we can see that the most prevalent key among popular songs is C#, which tells us that this is a very popular key for hit songs in 2023.")
 
     with tab2:
+        key_counts = df['key'].value_counts().reset_index()
+        key_counts.columns = ['Key', 'Count']
+
+        # calculate percentages
+        key_counts['Percentage'] = (key_counts['Count'] / key_counts['Count'].sum()) * 100
+
+        # plotting
+        fig = px.pie(key_counts, names='Key', values='Percentage',
+                    title='Distribution of Musical Keys by Percentage',
+                    hover_data=['Count'], labels={'Percentage':'% of Total'})
+
+        fig.update_traces(textinfo='percent+label')
+        fig.update_layout(legend_title_text='Key')
+
+        # display 
+        st.plotly_chart(fig)
+        st.write("👨‍💻 Here we have a pie chart to give us a better look at the distribution of the keys in the dataset.")
+    with tab3:
         st.subheader('Average Streams by Key')
         new_df = df.groupby('key')['streams'].agg(['mean', 'min', 'max']).reset_index()
         new_df = new_df.rename(columns={'mean': 'avg_streams', 'min': 'min_streams', 'max': 'max_streams'})
@@ -156,8 +173,7 @@ elif page == 'Analysis':
         st.plotly_chart(fig)
 
         st.write("👨‍💻 Here we can see that the average streams by key are highest with C#, though the second is E. That tells us that even though E is not the most prevalent in the dataset, the average of the songs in the key of E have a lot of streams. This graph tells us something different than the Count of Each Key - this way we can see which song keys are streamed the most.")
-
-    with tab3:
+    with tab4:
         st.subheader('BPM Histogram')
         fig = px.histogram(df, x='bpm', nbins=50, title="Distribution of BPM")
 
@@ -170,9 +186,8 @@ elif page == 'Analysis':
 
         # display
         st.plotly_chart(fig)
-
         st.write("👨‍💻 Here we can see that the most popular BPM's are in the 120-124 range.")
-    with tab4:
+    with tab5:
         st.subheader('Artist Chart')
         # splitting artist names and putting them into separate rows
         all_artists = df['artist(s)_name'].str.split(', ').explode()
@@ -191,7 +206,7 @@ elif page == 'Analysis':
         # display
         st.plotly_chart(fig)
         st.write("👨‍💻 Here we can see the most popular artists of 2023.")
-    with tab5:
+    with tab6:
         st.subheader('Number of Artists Contributing to Each Song')
         artist_count_distribution = df['artist_count'].value_counts().reset_index()
         artist_count_distribution.columns = ['Number of Artists', 'Number of Songs']
@@ -210,7 +225,7 @@ elif page == 'Predictions':
     df['danceability_energy'] = df['danceability_%'] * df['energy_%']
     df['valence_danceability'] = df['valence_%'] / df['danceability_%']
 
-    # option to select a target variable for prediction
+    # Option to select a target variable for prediction
     target_variable = st.selectbox('Select target variable for prediction', ['streams', 'Another target variable'])
 
     # select only numeric features for modeling
@@ -219,43 +234,43 @@ elif page == 'Predictions':
     X = quantitative_df.drop(columns=[target_variable])
     features_list = X.columns.tolist()  # Convert columns to list
 
-    # let the user select which features to include in the model
+    # Let the user select which features to include in the model
     selected_features = st.multiselect('Select features to include in the model', options=features_list, default=features_list)
 
-    # adjusting X to only include selected features
+    # Adjusting X to only include selected features
     X = X[selected_features]
 
-    # preparing the data
+    # Preparing the data
     X = quantitative_df[selected_features]
     y = quantitative_df[target_variable]
 
-    # splitting the data
+    # Splitting the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # training the linear regression model
+    # Training the linear regression model
     lin_reg = LinearRegression()
     lin_reg.fit(X_train, y_train)
 
-    # displaying feature importance
+    # Displaying feature importance
     coefficients = lin_reg.coef_
     importance = np.abs(coefficients)
 
-    # plotting feature importance
+    # Plotting feature importance
     fig_importance = px.bar(x=importance, y=selected_features, orientation='h',
                             labels={'x': 'Absolute Coefficient Value', 'y': ''},
                             title='Feature Importance (Linear Regression)')
     st.plotly_chart(fig_importance)
 
-    # making predictions
+    # Making predictions
     pred = lin_reg.predict(X_test)
 
-    # plotting actual vs predicted streams
+    # Plotting actual vs predicted streams
     fig_pred = px.scatter(x=y_test, y=pred, labels={'x': 'Actual ' + target_variable, 'y': 'Predicted ' + target_variable},
                           title=f"Actual vs. Predicted {target_variable}", trendline="ols")
     fig_pred.update_layout(xaxis_title='Actual ' + target_variable, yaxis_title='Predicted ' + target_variable)
     st.plotly_chart(fig_pred)
 
-    # displaying metrics
+    # Displaying metrics
     mae = metrics.mean_absolute_error(y_test, pred)
     mse = metrics.mean_squared_error(y_test, pred)
     rmse = np.sqrt(metrics.mean_squared_error(y_test, pred))
