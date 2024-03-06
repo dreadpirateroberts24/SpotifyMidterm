@@ -210,12 +210,24 @@ elif page == 'Predictions':
     df['danceability_energy'] = df['danceability_%'] * df['energy_%']
     df['valence_danceability'] = df['valence_%'] / df['danceability_%']
 
+    # option to select a target variable for prediction
+    target_variable = st.selectbox('Select target variable for prediction', ['streams', 'Another target variable'])
+
     # select only numeric features for modeling
     quantitative_df = df.select_dtypes(include=[np.number])
 
+    X = quantitative_df.drop(columns=[target_variable])
+    features_list = X.columns.tolist()  # Convert columns to list
+
+    # let the user select which features to include in the model
+    selected_features = st.multiselect('Select features to include in the model', options=features_list, default=features_list)
+
+    # adjusting X to only include selected features
+    X = X[selected_features]
+
     # preparing the data
-    X = quantitative_df.drop('streams', axis=1)
-    y = quantitative_df['streams']
+    X = quantitative_df[selected_features]
+    y = quantitative_df[target_variable]
 
     # splitting the data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -226,11 +238,10 @@ elif page == 'Predictions':
 
     # displaying feature importance
     coefficients = lin_reg.coef_
-    feature_names = X.columns
     importance = np.abs(coefficients)
 
     # plotting feature importance
-    fig_importance = px.bar(x=importance, y=feature_names, orientation='h',
+    fig_importance = px.bar(x=importance, y=selected_features, orientation='h',
                             labels={'x': 'Absolute Coefficient Value', 'y': ''},
                             title='Feature Importance (Linear Regression)')
     st.plotly_chart(fig_importance)
@@ -239,10 +250,9 @@ elif page == 'Predictions':
     pred = lin_reg.predict(X_test)
 
     # plotting actual vs predicted streams
-    fig_pred = px.scatter(x=y_test, y=pred, labels={'x': 'Actual Streams', 'y': 'Predicted Streams'},
-                          title="Actual vs. Predicted Streams", trendline="ols")
-    fig_pred.add_shape(type='line', line=dict(dash='dash', color='red'),
-                      x0=y_test.min(), y0=y_test.min(), x1=y_test.max(), y1=y_test.max())
+    fig_pred = px.scatter(x=y_test, y=pred, labels={'x': 'Actual ' + target_variable, 'y': 'Predicted ' + target_variable},
+                          title=f"Actual vs. Predicted {target_variable}", trendline="ols")
+    fig_pred.update_layout(xaxis_title='Actual ' + target_variable, yaxis_title='Predicted ' + target_variable)
     st.plotly_chart(fig_pred)
 
     # displaying metrics
