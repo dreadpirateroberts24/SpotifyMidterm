@@ -1,3 +1,4 @@
+%%writefile app.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -91,7 +92,7 @@ elif page == 'Analysis':
     st.image(pairplot_image_path, caption='Pairplot')
 
     # tabs for each visualization
-    tab1, tab2, tab3 = st.tabs(["Count of Each Key", "Average Streams by Key", "BPM Histogram"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Count of Each Key", "Average Streams by Key", "BPM Histogram", "Artist Chart", "Number of Artists Contributing to Each Song"])
 
     with tab1:
         st.subheader("Count of Each Key")
@@ -165,6 +166,40 @@ elif page == 'Analysis':
         st.plotly_chart(fig)
 
         st.write("👨‍💻 Here we can see that the most popular BPM's are in the 120-124 range.")
+    with tab4:
+        st.subheader('Artist Chart')
+        # splitting artist names and putting them into separate rows
+        all_artists = df['artist(s)_name'].str.split(', ').explode()
+
+        # counting occurrences of each artist
+        artist_counts = all_artists.value_counts().reset_index()
+        artist_counts.columns = ['Artist', 'Frequency']
+
+        # visualizing top 10 artists
+        fig = px.bar(artist_counts.head(10), x='Artist', y='Frequency',
+                    title='Top 10 Artists by Frequency on Chart',
+                    labels={'Frequency': 'Number of Appearances'},
+                    color='Frequency',
+                    color_continuous_scale=px.colors.sequential.Viridis)
+
+        # display 
+        st.plotly_chart(fig)
+        st.write("👨‍💻 Here we can see the most popular artists of 2023.")
+    with tab5:
+
+        artist_count_distribution = df['artist_count'].value_counts().reset_index()
+        artist_count_distribution.columns = ['Number of Artists', 'Number of Songs']
+        artist_count_distribution = artist_count_distribution.sort_values('Number of Artists')
+        # visualizing the distribution of the number of artists contributing to each song
+        fig = px.bar(artist_count_distribution, x='Number of Artists', y='Number of Songs',
+                    title='Number of Artists Contributing to Each Song',
+                    labels={'Number of Songs': 'Number of Songs', 'Number of Artists': 'Number of Artists'},
+                    color='Number of Songs',
+                    color_continuous_scale=px.colors.sequential.Viridis)
+
+        # display
+        st.plotly_chart(fig)
+        st.write("👨‍💻 Here we can see how different artists contribute to the most popular songs of 2023.")
 elif page == 'Predictions':
     df['danceability_energy'] = df['danceability_%'] * df['energy_%']
     df['valence_danceability'] = df['valence_%'] / df['danceability_%']
